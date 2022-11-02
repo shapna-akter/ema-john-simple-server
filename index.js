@@ -24,7 +24,8 @@ async function run() {
             const query = {}
             const cursor = productCollection.find(query);
             const products = await cursor.toArray();
-            res.send(products)
+            const count = await productCollection.estimatedDocumentCount() //total koyta page ache
+            res.send({count, products})
         })
 
     }
@@ -33,7 +34,7 @@ async function run() {
 
     }
 }
-run().catch(err => {
+run().catch(err=>{
     console.error(err)
 });
 
