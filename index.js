@@ -1,6 +1,6 @@
 const express = require('express');
 const cors = require('cors');
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 require('dotenv').config(); // eta na likhle environment variable pabo na
 const app = express();
 const port = process.env.PORT || 5000;
@@ -11,6 +11,7 @@ app.use(express.json());
 
 //mongodb atlas connection code
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASSWORD}@cluster0.qlhnchw.mongodb.net/?retryWrites=true&w=majority`;
+// console.log(uri);
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
 
 
@@ -20,12 +21,25 @@ async function run() {
         const productCollection = client.db("emaJohn").collection("products");
 
         // 1.
-        app.get('/products', async (req, res) => {
+        app.get('/products', async(req, res) =>{
+            const page = parseInt(req.query.page);
+            const size = parseInt(req.query.size);
+            console.log(page, size);
             const query = {}
             const cursor = productCollection.find(query);
+            const products = await cursor.skip(page*size).limit(size).toArray();
+            const count = await productCollection.estimatedDocumentCount();
+            res.send({count, products});
+        });
+
+        //2
+        app.post('/productsByIds', async(req, res) =>{
+            const ids = req.body;
+            const objectIds = ids.map(id => ObjectId(id))
+            const query = {_id: {$in: objectIds}};
+            const cursor = productCollection.find(query);
             const products = await cursor.toArray();
-            const count = await productCollection.estimatedDocumentCount() //total koyta page ache
-            res.send({count, products})
+            res.send(products);
         })
 
     }
